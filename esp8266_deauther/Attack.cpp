@@ -408,11 +408,11 @@ void Attack::refreshLed() {
   }
   if (numberRunning >= 1 && settings.useLed) {
     if (debug) Serial.println("Attack LED : ON");
-    digitalWrite(2, LOW);
+    //digitalWrite(2, LOW);
   }
   else if (numberRunning == 0 || !settings.useLed) {
     if (debug) Serial.println("Attack LED : OFF");
-    digitalWrite(2, HIGH);
+    //digitalWrite(2, HIGH);
   }
 }
 

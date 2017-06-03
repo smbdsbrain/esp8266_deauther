@@ -10,31 +10,40 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
+
 #include <FS.h>
 
-#define resetPin 4 /* <-- comment out or change if you need GPIO 4 for other purposes */
-//#define USE_DISPLAY /* <-- uncomment that if you want to use the display */
+//#define resetPin 4 /* <-- comment out or change if you need GPIO 4 for other purposes */
+#define USE_DISPLAY /* <-- uncomment that if you want to use the display */
 
 #ifdef USE_DISPLAY
+
+  //#define ESP8266
+  //#include <SPI.h>
   #include <Wire.h>
-  
+  #include <Adafruit_GFX.h>
+  #include <Adafruit_PCD8544.h>
+  #include <Fonts/Tiny3x3a2pt7b.h>
   //include the library you need
-  #include "SSD1306.h"
+  //#include "SSD1306.h"
   //#include "SH1106.h"
   
   //button pins
-  #define upBtn D6
-  #define downBtn D7
-  #define selectBtn D5
+  #define upBtn D9
+  #define downBtn D4
+  #define selectBtn D10
   
   #define buttonDelay 180 //delay in ms
   
   //render settings
-  #define fontSize 8
-  #define rowsPerSite 8
+  #define fontSize 4
+  #define rowsPerSite 12
+  #define fontHeight 4
+  #define fontWidth 4
   
+  Adafruit_PCD8544 display = Adafruit_PCD8544(14, 13, 12, 5, 4);
   //create display(Adr, SDA-pin, SCL-pin)
-  SSD1306 display(0x3c, D2, D1);
+  //SSD1306 display(0x3c, D2, D1);
   //SH1106 display(0x3c, D2, D1);
   
   int rows = 3;
@@ -161,7 +170,7 @@ void startWiFi(bool start) {
 
 //==========AP-Scan==========
 void startAPScan() {
-  scanMode = "scanning...";
+  scanMode = "SCANNING...";
 #ifdef USE_DISPLAY
   drawInterface();
 #endif
@@ -385,11 +394,49 @@ void resetSettings() {
   server.send( 200, "text/json", "true" );
 }
 
-#ifdef USE_DISPLAY
-void drawInterface() {
-  display.clear();
 
+#ifdef USE_DISPLAY
+
+void displayDrawString(int x, int y, const char* str) {
+  display.setCursor(x, y);
+  display.println(str);
+}
+
+
+void drawInterface() {
+  display.clearDisplay();
+  display.setRotation(2);
+  display.setTextSize(1);
+  /*
+  display.setCursor(2 * fontWidth, 3);
+  display.println("-> WIFI: " + wifiMode);
+  display.setCursor(2 * fontWidth, 3 + fontHeight);
+  display.println("->" + scanMode);
+  display.setCursor(2 * fontWidth, 3 + 2 * fontHeight);
+  display.println("->" + attackMode);
+  */
+  
+  display.setCursor(0, 3 + 4 * lrow);
+  display.println("X");
+
+  int _rowsPerSite = 21;
   int _lrow = 0;
+  for (int i = curSite * rowsPerSite - rowsPerSite; i < curSite * rowsPerSite; i++) {
+     if (i == 0) displayDrawString(3, 3 + _lrow * fontSize, (" -->  WiFi " + wifiMode).c_str()); 
+    else if (i == 1)  displayDrawString(3, 3 + _lrow * fontSize, (" -->  " + scanMode).c_str()); 
+    else if (i == 2) displayDrawString(3, 3 + _lrow * fontSize, (" -->  " + attackMode + " ATTACK").c_str()); 
+    else if (i - 3 <= apScan.results) {
+      displayDrawString(8, 3 + _lrow  * fontSize, apScan.getAPName(i - 3).c_str());
+      if (apScan.getAPSelected(i - 3)) {
+        //displayDrawString(1, 3 + _lrow * fontSize, ">");
+        displayDrawString(4, 3 + _lrow * fontSize, ">");
+      }
+    }
+    _lrow++;
+  }
+    
+  /*
+  
   for (int i = curSite * rowsPerSite - rowsPerSite; i < curSite * rowsPerSite; i++) {
     if (i == 0) display.drawString(3, i * fontSize, " -->  WiFi " + wifiMode);
     else if (i == 1) display.drawString(3, i * fontSize, " -->  " + scanMode);
@@ -404,7 +451,7 @@ void drawInterface() {
     if (_lrow == lrow) display.drawVerticalLine(0, _lrow * fontSize, fontSize);
     _lrow++;
   }
-
+  */
   display.display();
 }
 #endif
@@ -418,10 +465,15 @@ void setup() {
   }
   
 #ifdef USE_DISPLAY
+
+  display.begin();
+  display.setContrast(50);
+  display.setFont(&   Tiny3x3a2pt7b);
+/*
   display.init();
   display.setFont(Roboto_Mono_8);
   display.flipScreenVertically();
-  drawInterface();
+  drawInterface();*/
   pinMode(upBtn, INPUT_PULLUP);
   pinMode(downBtn, INPUT_PULLUP);
   pinMode(selectBtn, INPUT_PULLUP);
