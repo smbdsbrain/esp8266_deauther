@@ -46,7 +46,7 @@
   //SSD1306 display(0x3c, D2, D1);
   //SH1106 display(0x3c, D2, D1);
   
-  int rows = 3;
+  int rows = 4;
   int curRow = 0;
   int sites = 1;
   int curSite = 1;
@@ -55,6 +55,7 @@
 
 String wifiMode = "";
 String attackMode = "";
+bool beaconMode = false;
 String scanMode = "SCAN";
 
 bool warning = true;
@@ -178,7 +179,7 @@ void startAPScan() {
 
 #ifdef USE_DISPLAY
     apScan.sort();
-    rows = 3;
+    rows = 4;
     rows += apScan.results;
     sites = rows / rowsPerSite;
     if (rows % rowsPerSite > 0) sites++;
@@ -424,9 +425,10 @@ void drawInterface() {
   for (int i = curSite * rowsPerSite - rowsPerSite; i < curSite * rowsPerSite; i++) {
      if (i == 0) displayDrawString(3, 3 + _lrow * fontSize, (" -->  WiFi " + wifiMode).c_str()); 
     else if (i == 1)  displayDrawString(3, 3 + _lrow * fontSize, (" -->  " + scanMode).c_str()); 
-    else if (i == 2) displayDrawString(3, 3 + _lrow * fontSize, (" -->  " + attackMode + " ATTACK").c_str()); 
-    else if (i - 3 <= apScan.results) {
-      displayDrawString(8, 3 + _lrow  * fontSize, apScan.getAPName(i - 3).c_str());
+    else if (i == 2) displayDrawString(3, 3 + _lrow * fontSize, (" -->  " + attackMode + " ATTACK").c_str());
+    else if (i == 3) displayDrawString(3, 3 + _lrow * fontSize, beaconMode ? " -->  BEACON STOP" : " --> BEACON START");
+    else if (i - 4 <= apScan.results) {
+      displayDrawString(8, 3 + _lrow  * fontSize, apScan.getAPName(i - 4).c_str());
       if (apScan.getAPSelected(i - 3)) {
         //displayDrawString(1, 3 + _lrow * fontSize, ">");
         displayDrawString(4, 3 + _lrow * fontSize, ">");
@@ -607,10 +609,25 @@ void loop() {
     } else if (curRow == 2) {
       if (attackMode == "START" && apScan.getFirstTarget() > -1) attack.start(0);
       else if (attackMode == "STOP") attack.stop(0);
+    }
+
+    // ===== BEACON attack =====
+    else if (curRow == 3) {
+      if(beaconMode) {
+        attack.stop(1);
+        beaconMode = false;
+      }
+      else
+      {
+        beaconMode = true;
+        attack.stopAll();
+        ssidList._random();
+        attack.start(1);
+      }
     } 
     
     // ===== select APs ===== 
-    else if (curRow >= 3) {
+    else if (curRow >= 4) {
       attack.stop(0);
       apScan.select(curRow - 3);
     }
