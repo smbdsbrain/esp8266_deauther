@@ -38,13 +38,11 @@
   //render settings
   #define fontSize 4
   #define rowsPerSite 12
-  #define fontHeight 4
-  #define fontWidth 4
+  #define fontHeight 3
+  #define fontWidth 3
+  #define funcsCount 4 // count of strings before aps names
   
   Adafruit_PCD8544 display = Adafruit_PCD8544(14, 13, 12, 5, 4);
-  //create display(Adr, SDA-pin, SCL-pin)
-  //SSD1306 display(0x3c, D2, D1);
-  //SH1106 display(0x3c, D2, D1);
   
   int rows = 4;
   int curRow = 0;
@@ -408,52 +406,26 @@ void drawInterface() {
   display.clearDisplay();
   display.setRotation(2);
   display.setTextSize(1);
-  /*
-  display.setCursor(2 * fontWidth, 3);
-  display.println("-> WIFI: " + wifiMode);
-  display.setCursor(2 * fontWidth, 3 + fontHeight);
-  display.println("->" + scanMode);
-  display.setCursor(2 * fontWidth, 3 + 2 * fontHeight);
-  display.println("->" + attackMode);
-  */
   
-  display.setCursor(0, 3 + 4 * lrow);
+  display.setCursor(0, fontHeight + fontHeight * lrow);
   display.println("X");
 
-  int _rowsPerSite = 21;
+  //int _rowsPerSite = 21;
   int _lrow = 0;
   for (int i = curSite * rowsPerSite - rowsPerSite; i < curSite * rowsPerSite; i++) {
-     if (i == 0) displayDrawString(3, 3 + _lrow * fontSize, (" -->  WiFi " + wifiMode).c_str()); 
-    else if (i == 1)  displayDrawString(3, 3 + _lrow * fontSize, (" -->  " + scanMode).c_str()); 
-    else if (i == 2) displayDrawString(3, 3 + _lrow * fontSize, (" -->  " + attackMode + " ATTACK").c_str());
-    else if (i == 3) displayDrawString(3, 3 + _lrow * fontSize, beaconMode ? " -->  BEACON STOP" : " --> BEACON START");
-    else if (i - 4 <= apScan.results) {
-      displayDrawString(8, 3 + _lrow  * fontSize, apScan.getAPName(i - 4).c_str());
-      if (apScan.getAPSelected(i - 3)) {
-        //displayDrawString(1, 3 + _lrow * fontSize, ">");
-        displayDrawString(4, 3 + _lrow * fontSize, ">");
+     if (i == 0) displayDrawString(fontWidth, fontHeight + _lrow * fontSize, (" -->  WiFi " + wifiMode).c_str()); 
+    else if (i == 1)  displayDrawString(fontWidth, fontHeight + _lrow * fontSize, (" -->  " + scanMode).c_str()); 
+    else if (i == 2) displayDrawString(fontWidth, fontHeight + _lrow * fontSize, (" -->  " + attackMode + " DEAUTH").c_str());
+    else if (i == 3) displayDrawString(fontWidth, fontHeight + _lrow * fontSize, beaconMode ? " -->  BEACON STOP" : " --> BEACON START");
+    else if (i - funcsCount <= apScan.results) {
+      displayDrawString(8, fontWidth + _lrow  * fontSize, apScan.getAPName(i - funcsCount).c_str());
+      if (apScan.getAPSelected(i - funcsCount)) {
+        //displayDrawString(1, fontWidth + _lrow * fontSize, ">");
+        displayDrawString(4, fontWidth + _lrow * fontSize, ">");
       }
     }
     _lrow++;
   }
-    
-  /*
-  
-  for (int i = curSite * rowsPerSite - rowsPerSite; i < curSite * rowsPerSite; i++) {
-    if (i == 0) display.drawString(3, i * fontSize, " -->  WiFi " + wifiMode);
-    else if (i == 1) display.drawString(3, i * fontSize, " -->  " + scanMode);
-    else if (i == 2) display.drawString(3, i * fontSize, " -->  " + attackMode + " attack");
-    else if (i - 3 <= apScan.results) {
-      display.drawString(3, _lrow * fontSize, apScan.getAPName(i - 3));
-      if (apScan.getAPSelected(i - 3)) {
-        display.drawVerticalLine(1, _lrow * fontSize, fontSize);
-        display.drawVerticalLine(2, _lrow * fontSize, fontSize);
-      }
-    }
-    if (_lrow == lrow) display.drawVerticalLine(0, _lrow * fontSize, fontSize);
-    _lrow++;
-  }
-  */
   display.display();
 }
 #endif
@@ -471,11 +443,6 @@ void setup() {
   display.begin();
   display.setContrast(50);
   display.setFont(&   Tiny3x3a2pt7b);
-/*
-  display.init();
-  display.setFont(Roboto_Mono_8);
-  display.flipScreenVertically();
-  drawInterface();*/
   pinMode(upBtn, INPUT_PULLUP);
   pinMode(downBtn, INPUT_PULLUP);
   pinMode(selectBtn, INPUT_PULLUP);
@@ -621,15 +588,19 @@ void loop() {
       {
         beaconMode = true;
         attack.stopAll();
-        ssidList._random();
+        int selectedTarget;
+        if((selectedTarget = apScan.getFirstTarget()) > -1)
+          ssidList.addClone(apScan.getAPName(selectedTarget));
+        else
+          ssidList._random();
         attack.start(1);
       }
     } 
     
     // ===== select APs ===== 
-    else if (curRow >= 4) {
+    else if (curRow >= funcsCount) {
       attack.stop(0);
-      apScan.select(curRow - 3);
+      apScan.select(curRow - funcsCount);
     }
     delay(buttonDelay);
   }
